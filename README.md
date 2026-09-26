@@ -149,7 +149,7 @@ cd ../frontend && npm install && npm run dev
 kingdom-extensions/
 ├── docs/
 │   ├── motion-lab.md              动效基因库：架构、采集、去重、代码生成、数据模型
-│   ├── motion-workbench.md        动效工作台（v1.1）：模板与组合、推荐指数、动效助手、运行档位
+│   ├── motion-workbench.md        动效工作台（v1.1.0）：模板与组合、推荐指数、动效助手、运行档位
 │   ├── music-agent.md             音乐 Agent：解析、映射引擎、时间线、回放、数据模型
 │   └── desktop-agent-protocol.md  桌面代理执行协议（WebSocket 消息与安全约束）
 ├── demo/
