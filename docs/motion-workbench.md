@@ -2,7 +2,7 @@
 
 > 把「收集来的动效」变成「能按需求挑出来、能调、能直接组一套」的模板库：
 > 60 个模板（官方 30 + 社区 30）+ 30 套组合方案（119 步）+ 一个模型优先、失败会如实回退的动效助手
-> + 一条「一句话 → 完整设计方案」的 AI 设计链路
+> + 一条「一句话 → 完整设计方案」的 AI 设计链路，以及把方案导出成工程文件的代码生成器
 > + 一条把一句话需求拆成五个轴、逐轴给理由的智能推荐链路。
 
 ![动效工作台](screenshots/motion-workbench.png)
@@ -45,6 +45,40 @@
 
 分面是可叠加的（场景 + 风格 + 关键词一起筛），再点一次取消，也可以一键清除。**组合方案**把几个模板按应用顺序串成场景级方案
 （如 `Premium Hero` = 背景 → 内容 → 交互），点开即按第一个成员预览，成员可逐个检查。
+
+## 代码导出：从「看着好」到「拷进项目就能跑」
+
+工作台里每个模板都有自己的代码面板，但那给的是**一个动效**的片段；
+代码导出给的是**一整套方案**的工程文件：主组件 + 每个步骤一个文件 + 配置 + 样式。
+
+| 格式 | 文件 | 隔离方式 |
+| --- | --- | --- |
+| Vue 3 | `MotionPlan.vue` + `steps/Step1…N.vue` + `motion.config.ts` | 每步一个 SFC，`<style scoped>` 隔离 |
+| React | `MotionPlan.tsx` + `steps/…tsx` + 每步一份 `.css` + 配置 + `motion.css` | 每步 CSS 在服务端作用域化 |
+| HTML + CSS | `index.html` + `motion.css` | 同上，双击就能打开 |
+
+**参数不写死在样式里**，而是作为 CSS 变量挂在每一步的包装元素上：调参只改配置或那一行 style 绑定。
+
+### 拼起来不串样式，是这一层最要紧的事
+
+三十多个模板都有 `.motion-root`，参数变量都叫 `--m-duration`，`@keyframes` 也有重名。所以导出前统一作用域化：
+
+- 普通规则加前缀：`.m-wipe` → `.mlab-step-2 .m-wipe`；
+- `:root` / `html` / `body` 换成包装元素本身 —— 否则第二步的变量会盖掉第一步；
+- `@keyframes` 重命名为 `mlab-step-1-m-drift`，同一份 CSS 里的 `animation:` 引用一起改；
+- `@media` / `@supports` 递归处理；
+- Vue 的 `<style scoped>` 之外再收一次 `:root`：scoped 里的 `:root` 会变成 `:root[data-v-x]`，
+  匹配不到任何元素，变量会**静默失效**。
+
+导出的结构、样式、参数全部来自模板库那一份已经验证过的实现，生成器只做「包装 + 隔离 + 落参数」——
+所以沙箱预览里看到的效果与导出结果一致，不是靠对图，而是靠同一份来源。
+
+### 下载：零依赖的 ZIP
+
+多文件导出要能一次拿走，而浏览器没有原生打包 API。为了这一个功能引一个压缩库不值得，
+所以自己写了一个只用 store 模式的 ZIP（CRC32 + 本地文件头 + 中央目录 + EOCD，约 100 行）。
+产物是纯文本、体积本来就小（4 步方案约 8 KB），不压缩只是大一点，换来的是零依赖、可复现，
+以及——它的 CRC32 与 Node 的 `zlib.crc32` 逐字节对得上（实测校验过）。
 
 ## AI 设计：一句话拿到一份完整方案
 
@@ -239,6 +273,7 @@ motion_template ──┬── 被 motion_recipe.member_keys 引用（JSON 数�
 | POST | `/api/extensions/motion/templates/assist` | 助手（模型优先，失败回退检索；返回 `source` 与 `fallbackReason`） |
 | POST | `/api/extensions/motion/templates/recommend` | 智能推荐：一句话 → 五轴意图 → Top N，每条带命中理由、性能等级与运行档位 |
 | POST | `/api/extensions/motion/templates/design` | AI 设计：一句需求 → 完整方案（组合 + 每步的动画/作用/参数/性能成本 + 逐条说明） |
+| POST | `/api/extensions/motion/templates/export` | 代码导出：方案 → Vue / React / HTML 工程文件 + 组合预览 HTML |
 | GET | `/api/extensions/motion/templates/recipes` | 组合方案列表（按场景筛选；每条带步骤与整体性能成本） |
 | GET | `/api/extensions/motion/templates/recipes/{recipeKey}` | 组合方案详情：步骤（动画 / 作用 / 参数 / 性能成本）+ 成员 + 推荐指数 |
 | POST | `/api/extensions/motion/templates/ratings` | 提交人工评分与理由 |
@@ -249,7 +284,7 @@ motion_template ──┬── 被 motion_recipe.member_keys 引用（JSON 数�
 
 ## 测试覆盖
 
-动效模块共 **111 个**单元测试（含 v1.0 的采集层 26 个），加上音乐 Agent 97 个与通用的 13 个，后端合计 **221 个**用例全绿。
+动效模块共 **128 个**单元测试（含 v1.0 的采集层 26 个），加上音乐 Agent 97 个与通用的 13 个，后端合计 **238 个**用例全绿。
 其中工作台与推荐链路的部分：
 
 | 测试类 | 用例 | 覆盖点 |
@@ -257,6 +292,8 @@ motion_template ──┬── 被 motion_recipe.member_keys 引用（JSON 数�
 | `MotionTemplateServiceTest` | 8 | 推荐指数加权与等级、分面数量、档位判据（含 Three.js / Canvas 必为 GPU 档）、参数解析、详情装配 |
 | `MotionAssistantModelTest` | 9 | 模型应答解析（含 ```json 包裹）、非法 JSON / 空响应 / 非 200 → 回退、杜撰的模板 key 被丢弃、模板清单与参数白名单生成 |
 | `MotionIntentParserTest` | 18 | 12 个场景的真实说法逐条解析成五轴；触发 / 性能轴单独钉住；命中痕迹与复述；听不懂与空输入不报错；同一句话两次解析完全一致 |
+| `CssScoperTest` | 8 | 选择器加前缀、`:root`/`html`/`body` 收进包装元素、`@keyframes` 重命名且引用同步、关键帧内部不加前缀、`@media` 递归、同名关键帧按步改名、空输入与 `@import` 不炸 |
+| `MotionCodeExportServiceTest` | 9 | Vue/React/HTML 三种产物清单与内容、逐步 CSS 作用域化且互不污染、组合预览同源同构、参数覆盖与单位、临时组合（只给模板清单）导出、格式容错、组件与包装类命名 |
 | `MotionDesignServiceTest` | 14 | 规则设计完整产出、同一句输入结果稳定、轻量预算的数量减半与时长收短（含「18 秒循环周期不动」「timeline 不是 line」两条克制）、参数夹紧、组合按轴排序、模型参数只认方案里存在的模板与参数名、模型只在规则没识别时补空 |
 | `MotionRecipeServiceTest` | 9 | 步骤按方案声明顺序装配（不是库里的顺序）、引用了不存在的模板则跳过且编号仍连续、老数据回退到成员清单、坏 JSON 不炸、整体性能取最重档位并点名到那一步、方案分数为成员均值 |
 | `MotionRecommendationServiceTest` | 11 | 加权顺序（场景 40 / 风格 25 / 触发 18 / 情绪 15 / 性能 12）、每条推荐都给得出理由、低预算把 GPU 档往后放、性能等级 A/B/C、Top N 收敛、空输入兜底、结果稳定、卡片显示模板自己的标签 |
