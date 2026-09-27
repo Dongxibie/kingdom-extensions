@@ -10,7 +10,7 @@
 | 技术要点 | Redis 缓存采集、三级去重、沙箱预览、模板化代码生成；模型优先且会如实回退的动效助手、三档运行成本标注 | `javax.sound.midi` 纯 Java 解析、音阶/半音两套键位展开、WebAudio 回放 |
 | 数据表 | `motion_resource`、`motion_code`、`motion_template`、`motion_recipe`、`motion_rating`、`motion_candidate` | `music_task`、`music_note`、`instrument_profile` |
 | 后端接口 | 24 个（资源 8 + 采集 2 + 工作台 9 + 候选池 5） | 25 个（含映射、乐器档案、宏导出、本机演奏与 AI 助手） |
-| 单测 | 88 个 | 97 个 |
+| 单测 | 97 个 | 97 个 |
 
 代码在本机工作台的仓库里，本仓库负责**讲清楚这两个模块是什么、怎么设计的、怎么验证的**：
 
@@ -122,7 +122,9 @@ mysql -uroot -proot < db/kingdom_studio.sql              # 主站五张表
 mysql -uroot -proot kingdom_studio < db/extensions_motion.sql
 mysql -uroot -proot kingdom_studio < db/extensions_motion_seed.sql
 mysql -uroot -proot kingdom_studio < db/extensions_motion_template.sql        # 工作台三张表（可重复执行）
-mysql -uroot -proot kingdom_studio < db/extensions_motion_template_seed.sql   # 30 个官方模板 + 5 套组合 + 评分
+mysql -uroot -proot kingdom_studio < db/extensions_motion_template_seed.sql   # 30 个官方模板 + 评分
+mysql -uroot -proot kingdom_studio < db/extensions_motion_community_seed.sql  # 30 个社区模板 + 候选池
+mysql -uroot -proot kingdom_studio < db/extensions_motion_recipe_seed.sql     # 30 套组合方案（119 步）
 mysql -uroot -proot kingdom_studio < db/extensions_motion_community.sql       # 候选池表 + 模板来源列（可重复执行）
 mysql -uroot -proot kingdom_studio < db/extensions_motion_community_seed.sql  # 30 个社区精选 + 118 条候选
 mysql -uroot -proot kingdom_studio < db/extensions_music.sql

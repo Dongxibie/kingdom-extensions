@@ -1,7 +1,7 @@
 # 动效工作台 / Motion Workbench（动效基因库 v1.1.0）
 
 > 把「收集来的动效」变成「能按需求挑出来、能调、能直接组一套」的模板库：
-> 60 个模板（官方 30 + 社区 30）+ 5 套组合方案 + 一个模型优先、失败会如实回退的动效助手
+> 60 个模板（官方 30 + 社区 30）+ 30 套组合方案（119 步）+ 一个模型优先、失败会如实回退的动效助手
 > + 一条把一句话需求拆成五个轴、逐轴给理由的智能推荐链路。
 
 ![动效工作台](screenshots/motion-workbench.png)
@@ -44,6 +44,34 @@
 
 分面是可叠加的（场景 + 风格 + 关键词一起筛），再点一次取消，也可以一键清除。**组合方案**把几个模板按应用顺序串成场景级方案
 （如 `Premium Hero` = 背景 → 内容 → 交互），点开即按第一个成员预览，成员可逐个检查。
+
+## 组合模式：一套方案要被拆开看
+
+单个动效是素材，组合才是「场景级的答案」—— 但组合不能是一句空话，
+所以每一套方案都被拆成**按应用顺序排列的步骤**，每一步回答四个问题：
+
+| 列 | 例子 |
+| --- | --- |
+| 用哪个动画 | 幕布分屏入场 |
+| 负责哪一层 | 内容 |
+| 作用是什么 | 首屏像幕布一样从中间分开，先给空间再给内容 |
+| 代价多大 | 性能 A · 轻量 · 2 个可调参数 |
+
+点某一步，中间的舞台就切到那一步的模板并载入它自己的可调参数；
+「依次预览」会按顺序每 4.2 秒自动走一步（走完自动停，手动点步或切换方案也会停），
+等于把「这页效果是怎么一层层叠出来的」当场演一遍。
+
+**整体性能成本取最重的一步，不取平均。** 平均值会把「有一处是 GPU 档」这件事抹平，
+而用户真正要判断的是「跑到那一步会不会卡」。所以三档各占几步摊开写，
+降级建议点名到具体某一步：*「最重的一步是『粒子星网』，移动端可以把它换成同场景的轻量模板，其余步骤照旧。」*
+
+内置 30 套方案覆盖六个场景：网站首页 10 套（Apple Product Page / Luxury Hotel / Cyber Launch …）、
+个人主页 6 套（Designer Portfolio / Photographer Gallery …）、AI 产品页 5 套（AI Model Launch / AI Wellness …）、
+数据后台 4 套（Analytics Console / Ops Console …）、游戏界面 3 套（Esports Site / Game Loading Screen …）、
+登录页面 2 套。性能上 A 级 6 套、B 级 18 套、C 级 6 套 —— C 级都是真的用到三维或 Canvas 的方案，不是随便标的。
+
+30 套方案由已有的 60 个模板组合而成，其中 55 个模板进了至少一套组合：
+组合这一层是在**真的复用**已入库的动效，而不是又造一批新素材。
 
 ## 智能推荐：一句话拆成五个轴，逐轴给理由
 
@@ -163,8 +191,8 @@ motion_template ──┬── 被 motion_recipe.member_keys 引用（JSON 数�
 | POST | `/api/extensions/motion/templates/search` | 内置的可解释检索：识别场景 / 风格 / 技术 / 关键词，逐条给命中理由 |
 | POST | `/api/extensions/motion/templates/assist` | 助手（模型优先，失败回退检索；返回 `source` 与 `fallbackReason`） |
 | POST | `/api/extensions/motion/templates/recommend` | 智能推荐：一句话 → 五轴意图 → Top N，每条带命中理由、性能等级与运行档位 |
-| GET | `/api/extensions/motion/templates/recipes` | 组合方案列表（按场景筛选） |
-| GET | `/api/extensions/motion/templates/recipes/{recipeKey}` | 组合方案详情（成员与推荐指数） |
+| GET | `/api/extensions/motion/templates/recipes` | 组合方案列表（按场景筛选；每条带步骤与整体性能成本） |
+| GET | `/api/extensions/motion/templates/recipes/{recipeKey}` | 组合方案详情：步骤（动画 / 作用 / 参数 / 性能成本）+ 成员 + 推荐指数 |
 | POST | `/api/extensions/motion/templates/ratings` | 提交人工评分与理由 |
 
 `GET /templates/{templateKey}` 与 `GET /templates/recipes` 的形状是重叠的，这里依赖 Spring 的匹配规则：
@@ -173,7 +201,7 @@ motion_template ──┬── 被 motion_recipe.member_keys 引用（JSON 数�
 
 ## 测试覆盖
 
-动效模块共 **88 个**单元测试（含 v1.0 的采集层 26 个），加上音乐 Agent 97 个与通用的 13 个，后端合计 **198 个**用例全绿。
+动效模块共 **97 个**单元测试（含 v1.0 的采集层 26 个），加上音乐 Agent 97 个与通用的 13 个，后端合计 **207 个**用例全绿。
 其中工作台与推荐链路的部分：
 
 | 测试类 | 用例 | 覆盖点 |
@@ -181,6 +209,7 @@ motion_template ──┬── 被 motion_recipe.member_keys 引用（JSON 数�
 | `MotionTemplateServiceTest` | 8 | 推荐指数加权与等级、分面数量、档位判据（含 Three.js / Canvas 必为 GPU 档）、参数解析、详情装配 |
 | `MotionAssistantModelTest` | 9 | 模型应答解析（含 ```json 包裹）、非法 JSON / 空响应 / 非 200 → 回退、杜撰的模板 key 被丢弃、模板清单与参数白名单生成 |
 | `MotionIntentParserTest` | 18 | 12 个场景的真实说法逐条解析成五轴；触发 / 性能轴单独钉住；命中痕迹与复述；听不懂与空输入不报错；同一句话两次解析完全一致 |
+| `MotionRecipeServiceTest` | 9 | 步骤按方案声明顺序装配（不是库里的顺序）、引用了不存在的模板则跳过且编号仍连续、老数据回退到成员清单、坏 JSON 不炸、整体性能取最重档位并点名到那一步、方案分数为成员均值 |
 | `MotionRecommendationServiceTest` | 11 | 加权顺序（场景 40 / 风格 25 / 触发 18 / 情绪 15 / 性能 12）、每条推荐都给得出理由、低预算把 GPU 档往后放、性能等级 A/B/C、Top N 收敛、空输入兜底、结果稳定、卡片显示模板自己的标签 |
 
 模型相关的测试用 `MockRestServiceServer` 挂假应答，**不打真实模型**：给一个返回 401 的假服务，测试要断言的是"代码确实回退了"，
