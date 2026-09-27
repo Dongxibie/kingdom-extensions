@@ -5,12 +5,12 @@
 
 | | 动效基因库 / Motion Lab | 音乐 Agent / Music Agent |
 | --- | --- | --- |
-| 一句话 | 官方 30 + 社区精选 30 的双集合动效库：发现、策展、按需求挑模板、组方案、调参、出码 | MIDI / 简谱解析 → 键位映射 → 时间线回放 → 演奏脚本导出 → 本机演奏（用户主动开启 + ESC 急停）→ AI 助手选方案 |
+| 一句话 | 官方 30 + 社区精选 30 的双集合动效库：发现、策展、按需求挑模板、组方案、调参、出码 | MIDI / 简谱解析 → 键位映射 → 时间线回放 → 演奏脚本导出 → 本机演奏（用户主动开启 + ESC 急停）→ AI 助手选方案 → 游戏乐器匹配 → 曲谱分享（演奏码） |
 | 界面 | 两个三栏页面：资源管理（分类树 + 列表 / 沙箱预览 + 代码面板）与动效工作台（分面与组合 / 预览与参数 / 评分与运行档位） | 三栏工作台：输入与曲库 / 时间线与虚拟键盘 / 乐器档案与导出 |
 | 技术要点 | Redis 缓存采集、三级去重、沙箱预览、模板化代码生成；模型优先且会如实回退的动效助手、三档运行成本标注 | `javax.sound.midi` 纯 Java 解析、音阶/半音两套键位展开、WebAudio 回放 |
-| 数据表 | `motion_resource`、`motion_code`、`motion_template`、`motion_recipe`、`motion_rating`、`motion_candidate` | `music_task`、`music_note`、`instrument_profile` |
-| 后端接口 | 26 个（资源 8 + 采集 2 + 工作台 11 + 候选池 5） | 33 个（含映射、乐器档案、宏导出、本机演奏、AI 助手、分析 / 优化 / 演奏方案） |
-| 单测 | 128 个 | 133 个 |
+| 数据表 | `motion_resource`、`motion_code`、`motion_template`、`motion_recipe`、`motion_rating`、`motion_candidate` | `music_task`、`music_note`、`instrument_profile`、`performance_share` |
+| 后端接口 | 26 个（资源 8 + 采集 2 + 工作台 11 + 候选池 5） | 38 个（含映射、乐器档案、宏导出、本机演奏、AI 助手、分析 / 优化 / 演奏方案、游戏乐器匹配、曲谱分享） |
+| 单测 | 128 个 | 160 个 |
 
 代码在本机工作台的仓库里，本仓库负责**讲清楚这两个模块是什么、怎么设计的、怎么验证的**：
 
